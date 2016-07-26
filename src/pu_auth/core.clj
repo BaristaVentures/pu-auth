@@ -9,21 +9,19 @@
 (comment (reset! db (-> "mongodb://191.168.50.4/pickup_dev" monger.core/connect-via-uri :db)))
 
 (defn from-bearer [token]
-  (println token)
   (when token
     (let [auth-token (second (str/split token #"^Bearer "))]
       (when-let [authtoken-db (mc/find-one-as-map @db
                                                   "authtokens"
                                                   {:token auth-token})]
         (let [oid (ObjectId. (get-in authtoken-db
-                                     [:context :user_id]))]
-          (if (= (first (:scope authtoken-db)) "user")
-            (mc/find-one-as-map @db
+                                     [:context :user_id]))
+              scope (first (:scope authtoken-db))]
+          (mc/find-one-as-map @db
+                              (if (= scope "user")
                                 "users"
-                                {:_id oid})
-            (mc/find-one-as-map @db
-                                "providercustomers"
-                                {:_id oid})))))))
+                                "providercustomers")
+                              {:_id oid}))))))
 
 (defmethod restructure-param :auth
   [_ token {:keys [parameters lets body middlewares] :as acc}]
@@ -33,4 +31,4 @@
      (assoc-in [:swagger :parameters :header] {:authorization String})
      (assoc :body `((if-let [~'current-user (from-bearer ~token)]
                       (do ~@body)
-                      (ring.util.http-response/forbidden {:errors {:authorization "Wrong Session token."}}))))))
+                      (ring.util.http-response/unauthorized {:errors {:authorization "Wrong Session token."}}))))))

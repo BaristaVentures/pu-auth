@@ -1,4 +1,4 @@
-(defproject pu-auth "0.1.1"
+(defproject pu-auth "0.1.3"
   :description "PU Basic token validation"
   :url "http://example.com/FIXME"
   :license {:name "Eclipse Public License"
